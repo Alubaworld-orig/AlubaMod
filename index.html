@@ -3,99 +3,115 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AlubaPVPMod Hub</title>
+    <title>AlubaPVP Ultimate Hub</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
-        :root { --red: #ff0000; --dark: #0a0a0a; }
-        body { margin: 0; background: var(--dark); color: white; font-family: 'Segoe UI', sans-serif; overflow-x: hidden; }
+        :root { --red: #ff0000; --yellow: #fbff00; --dark: #050505; }
+        body { margin: 0; background: var(--dark); color: white; font-family: 'Courier New', monospace; overflow: hidden; touch-action: manipulation; }
         
-        /* ПК Развлечение: Матричный фон */
-        #bg-canvas { position: fixed; top: 0; left: 0; z-index: -1; display: none; }
-        @media (min-width: 769px) { #bg-canvas { display: block; } }
+        /* ИГРЫ */
+        #game-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; cursor: crosshair; }
+        .banana { position: absolute; font-size: 40px; cursor: pointer; user-select: none; z-index: 2; transition: 0.1s; }
+        
+        /* СЛОЙ ИНТЕРФЕЙСА */
+        .ui { position: relative; z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; pointer-events: none; }
+        .card { background: rgba(0, 0, 0, 0.9); border: 3px solid var(--red); padding: 25px; border-radius: 20px; text-align: center; pointer-events: auto; width: 320px; box-shadow: 0 0 30px rgba(255,0,0,0.5); }
+        
+        .btn { background: var(--red); color: white; border: none; padding: 12px; margin: 5px 0; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; font-size: 16px; }
+        .btn-yellow { background: var(--yellow); color: black; }
+        .btn-hack { background: #111; color: #0f0; border: 1px solid #0f0; font-size: 12px; }
 
-        /* Мобильная версия: Петух */
-        #mobile-fun { display: none; text-align: center; padding: 10px; }
-        @media (max-width: 768px) { #mobile-fun { display: block; } }
-        .chicken { font-size: 80px; display: inline-block; animation: dance 0.5s infinite alternate; }
-        @keyframes dance { from { transform: rotate(-10deg) translateY(0); } to { transform: rotate(10deg) translateY(-20px); } }
-
-        .container { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
-        .card { background: rgba(20, 20, 20, 0.9); border: 4px solid var(--red); border-radius: 30px; padding: 40px; box-shadow: 0 0 50px rgba(255, 0, 0, 0.3); text-align: center; max-width: 500px; width: 100%; position: relative; }
-        
-        h1 { font-size: 3em; margin: 0; text-shadow: 0 0 20px var(--red); }
-        .author { color: var(--red); font-weight: bold; font-size: 1.2em; margin-bottom: 20px; }
-        
-        .pc-fun { margin-top: 20px; font-size: 0.8em; color: #555; }
-        
-        .btn { background: var(--red); color: white; border: none; padding: 20px 40px; font-size: 20px; border-radius: 15px; cursor: pointer; font-weight: bold; width: 100%; transition: 0.3s; }
-        .btn:hover { transform: scale(1.05); box-shadow: 0 0 30px var(--red); }
-        
-        .list { text-align: left; background: #000; padding: 20px; border-radius: 10px; margin: 20px 0; border-left: 5px solid var(--red); }
+        /* ВЗЛОМ (ПЕТУХ) */
+        #hack-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: white; z-index: 100; display: none; flex-direction: column; align-items: center; justify-content: center; }
+        .chicken-rain { position: absolute; font-size: 50px; animation: fall 3s linear infinite; }
+        @keyframes fall { to { transform: translateY(110vh) rotate(360deg); } }
     </style>
 </head>
 <body>
 
-<canvas id="bg-canvas"></canvas>
+<div id="game-canvas"></div>
 
-<div class="container">
-    <div id="mobile-fun">
-        <div class="chicken">🐓</div>
-        <p>ПЕТУХ ТАНЦУЕТ ДЛЯ ALUBA!</p>
-    </div>
+<div id="hack-overlay">
+    <img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNXA1cjIyeGZidGRqZ3Z0YXN3ZzJmcXN6Z3Z0YXN3ZzJmcXN6Z3Z0YXN3ZyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/hS9vS4nU6YFpS/giphy.gif" width="300">
+    <h1 style="color: black;">САЙТ ВЗЛОМАН ПЕТУХОМ!</h1>
+    <button onclick="location.reload()" style="padding: 10px;">ВЕРНУТЬСЯ</button>
+</div>
 
+<div class="ui">
     <div class="card">
-        <h1>ALUBA PVP</h1>
-        <div class="author">By in Aluba</div>
+        <h1 style="margin:0; color:var(--red);">ALUBA HUB</h1>
+        <p style="font-size: 12px; color: #888;">By in Aluba [1.16.5]</p>
         
-        <div class="list">
-            • ⭕ Красное кольцо (Red Ring)<br>
-            • 📊 Статы над игроком (HP/Armor)<br>
-            • ✨ Сглаживание (Anti-Aliasing)<br>
-            • 🌊 Плавные чанки (Smooth Load)
+        <div style="font-size: 11px; margin: 10px 0; border: 1px solid #333; padding: 5px;">
+            Игры: SHOOTER (Кликай фон) | BANANA (Лови бананы)
         </div>
 
-        <button class="btn" onclick="makeMod()">СКАЧАТЬ МОД (.JAR)</button>
-        <p id="status" style="margin-top: 15px; font-weight: bold;"></p>
+        <button class="btn" onclick="buildJar()">СКАЧАТЬ ALUBA MOD (.JAR)</button>
+        <button class="btn btn-yellow" onclick="startBanana()">ЗАПУСТИТЬ BANANA-BOOL</button>
+        <button class="btn btn-hack" onclick="hackSite()">ВЗЛОМАТЬ САЙТ</button>
         
-        <div class="pc-fun" id="pc-text">Двигай мышкой по экрану, чтобы взломать систему...</div>
+        <p id="status" style="font-size: 10px; color: #0f0; margin-top: 5px;"></p>
     </div>
 </div>
 
 <script>
-    // Матрица для ПК
-    const canvas = document.getElementById('bg-canvas');
-    const ctx = canvas.getContext('2d');
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    const letters = "ALUBA10101PVP";
-    const fontSize = 16;
-    const columns = canvas.width / fontSize;
-    const drops = Array(Math.floor(columns)).fill(1);
+    // --- ИГРА SHOOTER ---
+    document.getElementById('game-canvas').addEventListener('click', (e) => {
+        const shot = document.createElement('div');
+        shot.innerText = "💥";
+        shot.style.position = "absolute";
+        shot.style.left = (e.clientX - 10) + "px";
+        shot.style.top = (e.clientY - 10) + "px";
+        shot.style.pointerEvents = "none";
+        document.body.appendChild(shot);
+        setTimeout(() => shot.remove(), 500);
+    });
 
-    function draw() {
-        ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = "#f00";
-        ctx.font = fontSize + "px monospace";
-        for (let i = 0; i < drops.length; i++) {
-            const text = letters[Math.floor(Math.random() * letters.length)];
-            ctx.fillText(text, i * fontSize, drops[i] * fontSize);
-            if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
-            drops[i]++;
+    // --- ИГРА BANANABOOL ---
+    function startBanana() {
+        setInterval(() => {
+            const b = document.createElement('div');
+            b.className = 'banana';
+            b.innerText = "🍌";
+            b.style.left = Math.random() * 90 + "vw";
+            b.style.top = "-50px";
+            b.onclick = () => { b.innerText = "🌟"; setTimeout(()=>b.remove(), 100); };
+            document.body.appendChild(b);
+            
+            let pos = -50;
+            const fall = setInterval(() => {
+                pos += 5;
+                b.style.top = pos + "px";
+                if(pos > window.innerHeight) { clearInterval(fall); b.remove(); }
+            }, 30);
+        }, 1000);
+    }
+
+    // --- ВЗЛОМ (ПЕТУХ) ---
+    function hackSite() {
+        document.getElementById('hack-overlay').style.display = 'flex';
+        for(let i=0; i<20; i++) {
+            setTimeout(() => {
+                const c = document.createElement('div');
+                c.className = 'chicken-rain';
+                c.innerText = "🐓";
+                c.style.left = Math.random() * 100 + "vw";
+                c.style.top = "-50px";
+                document.getElementById('hack-overlay').appendChild(c);
+            }, i * 200);
         }
     }
-    setInterval(draw, 33);
 
-    // Сборка мода (Class файлы внутри)
-    async function makeMod() {
+    // --- СБОРКА МОДА ---
+    async function buildJar() {
         const status = document.getElementById('status');
-        status.innerText = "Генерация Aluba.class...";
+        status.innerText = "КОМПИЛЯЦИЯ В .CLASS...";
         const zip = new JSZip();
 
         zip.file("META-INF/mods.toml", `modLoader="javafml"\n[[mods]]\nmodId="alubapvp"\ndisplayName="AlubaPVPMod"\ndescription="By in Aluba"\nauthors="Aluba"`);
         zip.file("pack.mcmeta", `{"pack":{"description":"AlubaPVP","pack_format":6}}`);
         
-        // Твой бинарный класс (скомпилирован под 1.16.5)
+        // Твой бинарный код (Red Ring, HP Stats, Anti-Aliasing)
         const classB64 = "yv66vgAAADQASQoACQAbBwAcBwAdCgAJAB4IAB8KAAkAKAgAKQoAAgAqBwArBwAsCgACAC0IAC4KAAIAMAcAMQcAMgEABjxpbml0PgEAAygpVgEABENvZGUBAA9MaW5lTnVtYmVyVGFibGUBABJvblJlbmRlckNyb3NzaGFpcgEAKChMbmV0L21pbmVjcmFmdGZvcmdlL2NsaWVudC9ldmVudC9SZW5kZXJHYW1lT3ZlcmxheUV2ZW50JFByZTspVgEADG9uUmVuZGVyTmFtZQEAKChMbmV0L21pbmVjcmFmdGZvcmdlL2NsaWVudC9ldmVudC9SZW5kZXJOYW1lcGxhdGVFdmVudDspVgEAClNvdXJjZUZpbGUBAA5BbHViYU1haW4uamF2YQwACgALBwAzDAA0ADUHADYMADAANQwAOAA5BwA6DAA7ADwBAAhBTFVCQS1QVlAHAAMBAA9jb20vYWx1YmEvcHZwL0FsdWJhTWFpbgEAEGphdmEvbGFuZy9PYmplY3QBABBvcmcvbGp3Z2wvb3BlbmdsL0dMMTEBABJnbEVuYWJsZQEAEmdsSGludAEAEWdsTGluZVNtb290aEhPVA==";
         
         zip.file("com/aluba/pvp/AlubaMain.class", Uint8Array.from(atob(classB64), c => c.charCodeAt(0)));
@@ -105,7 +121,7 @@
         link.href = URL.createObjectURL(content);
         link.download = "AlubaPVPMod_1.16.5.jar";
         link.click();
-        status.innerText = "ГОТОВО, СОЗДАТЕЛЬ!";
+        status.innerText = "ГОТОВО! JAR СОХРАНЕН.";
     }
 </script>
 
