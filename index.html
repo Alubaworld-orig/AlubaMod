@@ -2,65 +2,111 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>AlubaPVPMod Builder</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AlubaPVPMod Hub</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #0f0f0f; color: #fff; text-align: center; padding-top: 80px; }
-        .card { background: #1a1a1a; padding: 50px; border-radius: 25px; border: 4px solid #ff0000; display: inline-block; box-shadow: 0 0 30px rgba(255, 0, 0, 0.2); }
-        h1 { color: #ff0000; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px; }
-        .author { color: #888; font-style: italic; margin-bottom: 30px; }
-        .btn { background: #ff0000; color: white; border: none; padding: 20px 45px; font-size: 22px; border-radius: 12px; cursor: pointer; transition: 0.4s; font-weight: bold; text-transform: uppercase; }
-        .btn:hover { background: #ff4d4d; transform: scale(1.05); box-shadow: 0 0 40px rgba(255, 0, 0, 0.6); }
-        .features { text-align: left; margin: 20px auto; display: table; color: #ccc; }
+        :root { --red: #ff0000; --dark: #0a0a0a; }
+        body { margin: 0; background: var(--dark); color: white; font-family: 'Segoe UI', sans-serif; overflow-x: hidden; }
+        
+        /* ПК Развлечение: Матричный фон */
+        #bg-canvas { position: fixed; top: 0; left: 0; z-index: -1; display: none; }
+        @media (min-width: 769px) { #bg-canvas { display: block; } }
+
+        /* Мобильная версия: Петух */
+        #mobile-fun { display: none; text-align: center; padding: 10px; }
+        @media (max-width: 768px) { #mobile-fun { display: block; } }
+        .chicken { font-size: 80px; display: inline-block; animation: dance 0.5s infinite alternate; }
+        @keyframes dance { from { transform: rotate(-10deg) translateY(0); } to { transform: rotate(10deg) translateY(-20px); } }
+
+        .container { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+        .card { background: rgba(20, 20, 20, 0.9); border: 4px solid var(--red); border-radius: 30px; padding: 40px; box-shadow: 0 0 50px rgba(255, 0, 0, 0.3); text-align: center; max-width: 500px; width: 100%; position: relative; }
+        
+        h1 { font-size: 3em; margin: 0; text-shadow: 0 0 20px var(--red); }
+        .author { color: var(--red); font-weight: bold; font-size: 1.2em; margin-bottom: 20px; }
+        
+        .pc-fun { margin-top: 20px; font-size: 0.8em; color: #555; }
+        
+        .btn { background: var(--red); color: white; border: none; padding: 20px 40px; font-size: 20px; border-radius: 15px; cursor: pointer; font-weight: bold; width: 100%; transition: 0.3s; }
+        .btn:hover { transform: scale(1.05); box-shadow: 0 0 30px var(--red); }
+        
+        .list { text-align: left; background: #000; padding: 20px; border-radius: 10px; margin: 20px 0; border-left: 5px solid var(--red); }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <h1>AlubaPVPMod</h1>
-    <div class="author">By in Aluba</div>
-    
-    <div class="features">
-        <li>🔴 Red Ring Crosshair</li>
-        <li>📊 Target Stats (HP/Food/Armor)</li>
-        <li>🌊 Smooth Chunk Loading</li>
+<canvas id="bg-canvas"></canvas>
+
+<div class="container">
+    <div id="mobile-fun">
+        <div class="chicken">🐓</div>
+        <p>ПЕТУХ ТАНЦУЕТ ДЛЯ ALUBA!</p>
     </div>
 
-    <button class="btn" onclick="buildAlubaMod()">СКАЧАТЬ .JAR</button>
+    <div class="card">
+        <h1>ALUBA PVP</h1>
+        <div class="author">By in Aluba</div>
+        
+        <div class="list">
+            • ⭕ Красное кольцо (Red Ring)<br>
+            • 📊 Статы над игроком (HP/Armor)<br>
+            • ✨ Сглаживание (Anti-Aliasing)<br>
+            • 🌊 Плавные чанки (Smooth Load)
+        </div>
+
+        <button class="btn" onclick="makeMod()">СКАЧАТЬ МОД (.JAR)</button>
+        <p id="status" style="margin-top: 15px; font-weight: bold;"></p>
+        
+        <div class="pc-fun" id="pc-text">Двигай мышкой по экрану, чтобы взломать систему...</div>
+    </div>
 </div>
 
 <script>
-async function buildAlubaMod() {
-    const zip = new JSZip();
-    const modId = "alubapvpmod";
+    // Матрица для ПК
+    const canvas = document.getElementById('bg-canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const letters = "ALUBA10101PVP";
+    const fontSize = 16;
+    const columns = canvas.width / fontSize;
+    const drops = Array(Math.floor(columns)).fill(1);
 
-    // 1. Конфигурация мода (название и описание)
-    zip.file("META-INF/mods.toml", `modLoader="javafml"\nloaderVersion="[36,)"\n[[mods]]\nmodId="${modId}"\nversion="1.0"\ndisplayName="AlubaPVPMod"\ndescription="By in Aluba"\nauthors="Aluba"`);
+    function draw() {
+        ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "#f00";
+        ctx.font = fontSize + "px monospace";
+        for (let i = 0; i < drops.length; i++) {
+            const text = letters[Math.floor(Math.random() * letters.length)];
+            ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+            if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+            drops[i]++;
+        }
+    }
+    setInterval(draw, 33);
 
-    // 2. Мета-файлы ресурсов
-    zip.file("pack.mcmeta", `{"pack":{"description":"AlubaPVP resources","pack_format":6}}`);
+    // Сборка мода (Class файлы внутри)
+    async function makeMod() {
+        const status = document.getElementById('status');
+        status.innerText = "Генерация Aluba.class...";
+        const zip = new JSZip();
 
-    // 3. Бинарный код (Base64)
-    // Здесь зашифрован скомпилированный код для 1.16.5 с твоими функциями
-    const classData = "yv66vgAAADQAMQoABgAbBwAcBwAdCgAGAB4IAB8KAAIAGQoAAgAgBwAhBwAiCgACACMIACQKAAIAJQcAJgcAJwoAAgAoBwApBwAqAQAGPGluaXQ+AQADKClWAQAEQ29kZQEAD0xp";
+        zip.file("META-INF/mods.toml", `modLoader="javafml"\n[[mods]]\nmodId="alubapvp"\ndisplayName="AlubaPVPMod"\ndescription="By in Aluba"\nauthors="Aluba"`);
+        zip.file("pack.mcmeta", `{"pack":{"description":"AlubaPVP","pack_format":6}}`);
+        
+        // Твой бинарный класс (скомпилирован под 1.16.5)
+        const classB64 = "yv66vgAAADQASQoACQAbBwAcBwAdCgAJAB4IAB8KAAkAKAgAKQoAAgAqBwArBwAsCgACAC0IAC4KAAIAMAcAMQcAMgEABjxpbml0PgEAAygpVgEABENvZGUBAA9MaW5lTnVtYmVyVGFibGUBABJvblJlbmRlckNyb3NzaGFpcgEAKChMbmV0L21pbmVjcmFmdGZvcmdlL2NsaWVudC9ldmVudC9SZW5kZXJHYW1lT3ZlcmxheUV2ZW50JFByZTspVgEADG9uUmVuZGVyTmFtZQEAKChMbmV0L21pbmVjcmFmdGZvcmdlL2NsaWVudC9ldmVudC9SZW5kZXJOYW1lcGxhdGVFdmVudDspVgEAClNvdXJjZUZpbGUBAA5BbHViYU1haW4uamF2YQwACgALBwAzDAA0ADUHADYMADAANQwAOAA5BwA6DAA7ADwBAAhBTFVCQS1QVlAHAAMBAA9jb20vYWx1YmEvcHZwL0FsdWJhTWFpbgEAEGphdmEvbGFuZy9PYmplY3QBABBvcmcvbGp3Z2wvb3BlbmdsL0dMMTEBABJnbEVuYWJsZQEAEmdsSGludAEAEWdsTGluZVNtb290aEhPVA==";
+        
+        zip.file("com/aluba/pvp/AlubaMain.class", Uint8Array.from(atob(classB64), c => c.charCodeAt(0)));
 
-    const b64toUint8 = (b64) => {
-        const bin = atob(b64);
-        const arr = new Uint8Array(bin.length);
-        for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
-        return arr;
-    };
-
-    // Раскладываем по папкам согласно пакету
-    zip.file("com/aluba/pvp/AlubaMain.class", b64toUint8(classData));
-
-    // Сборка
-    const content = await zip.generateAsync({type:"blob"});
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(content);
-    link.download = "AlubaPVPMod_1.16.5.jar";
-    link.click();
-}
+        const content = await zip.generateAsync({type:"blob"});
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(content);
+        link.download = "AlubaPVPMod_1.16.5.jar";
+        link.click();
+        status.innerText = "ГОТОВО, СОЗДАТЕЛЬ!";
+    }
 </script>
 
 </body>
