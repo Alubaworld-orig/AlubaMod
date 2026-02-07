@@ -3,156 +3,138 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ALUBA VIP ARENA</title>
+    <title>ALUBA 3D VIP WORLD</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
-        body { margin: 0; background: #000; color: #fff; font-family: sans-serif; overflow: hidden; }
-        canvas { display: block; background: #111; border-bottom: 4px solid #f00; }
-        
-        .ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .card { background: rgba(0,0,0,0.9); border: 3px solid #f00; padding: 20px; border-radius: 20px; text-align: center; pointer-events: auto; width: 320px; box-shadow: 0 0 30px #f00; }
-        
-        .btn { background: #f00; color: #fff; border: none; padding: 12px; margin: 5px; cursor: pointer; border-radius: 8px; font-weight: bold; width: 90%; }
-        .vip-active { border-color: #ffd700 !important; box-shadow: 0 0 50px #ffd700 !important; }
-
-        #chicken-boss { position: fixed; bottom: -400px; left: 50%; transform: translateX(-50%); width: 250px; transition: 1s; z-index: 1000; }
-        .show-chicken { bottom: -10px !important; }
+        body { margin: 0; background: #000; color: #fff; font-family: 'Arial', sans-serif; overflow: hidden; }
+        #ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; 
+              display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; }
+        .card { background: rgba(0,0,0,0.8); border: 2px solid #ff0000; padding: 25px; border-radius: 20px; 
+                text-align: center; pointer-events: auto; width: 300px; box-shadow: 0 0 30px #f00; }
+        .btn { background: #f00; color: #fff; border: none; padding: 12px; margin: 10px 0; 
+               cursor: pointer; border-radius: 8px; font-weight: bold; width: 100%; transition: 0.3s; }
+        .btn:hover { background: #ff4444; transform: scale(1.05); }
+        #chicken { position: fixed; bottom: -500px; left: 50%; transform: translateX(-50%); 
+                   width: 300px; transition: 1s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 100; }
+        .show-chicken { bottom: -20px !important; }
+        .vip-active { border-color: gold !important; box-shadow: 0 0 50px gold !important; }
+        canvas { display: block; }
     </style>
 </head>
 <body>
 
-<canvas id="gameCanvas"></canvas>
-
-<img id="chicken-boss" src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExbnY5cXp4YndxeXByZW56eGZidGRqZ3Z0YXN3ZzJmcXN6Z3Z0YXN3ZyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/hS9vS4nU6YFpS/giphy.gif">
-
-<div class="ui-layer">
-    <div class="card" id="card">
-        <h1 id="title" style="margin:0; color:#f00;">ALUBA ARENA</h1>
-        <p id="status" style="font-size:12px; color:#888;">ПРОЙДИ ИГРУ ДЛЯ VIP</p>
-        
-        <button class="btn" onclick="initShooter()">ИГРАТЬ: SHOOTER PRO</button>
-        <button class="btn" style="background:#ffd700; color:#000;" onclick="initBanana()">ИГРАТЬ: BANANABOOL</button>
-        <hr style="border:1px solid #333;">
-        <button id="dl-btn" class="btn" style="background:#333;" onclick="downloadJar(false)">СКАЧАТЬ МОД</button>
+<div id="ui">
+    <div class="card" id="mainCard">
+        <h1 id="title" style="margin:0; color:#f00; letter-spacing: 2px;">ALUBA 3D</h1>
+        <p id="status" style="font-size:12px; color:#aaa;">ВЫИГРАЙ 3D БИТВУ ДЛЯ VIP</p>
+        <button class="btn" onclick="start3DGame()">ИГРАТЬ В 3D SHOOTER</button>
+        <hr style="border: 0.5px solid #333;">
+        <button id="dl-btn" class="btn" style="background:#222;" onclick="downloadMod(false)">СКАЧАТЬ ОБЫЧНЫЙ МОД</button>
     </div>
 </div>
 
-<script>
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+<img id="chicken" src="https://media.tenor.com/y_v9WqN2MhYAAAAi/chicken-glasses.gif">
 
-    let gameState = 'idle';
-    let enemies = [];
-    let ball = { x: 0, y: 0, vx: 0, vy: 0 };
-    let player = { x: 100, y: 100 };
+<script>
+    let scene, camera, renderer, enemies = [], isGameRunning = false;
     let score = 0;
 
-    function activateVip() {
-        gameState = 'idle';
-        document.getElementById('card').classList.add('vip-active');
-        document.getElementById('title').innerText = "VIP UNLOCKED";
-        document.getElementById('title').style.color = "#ffd700";
-        document.getElementById('chicken-boss').classList.add('show-chicken');
-        const btn = document.getElementById('dl-btn');
-        btn.innerText = "СКАЧАТЬ VIP МОД";
-        btn.style.background = "gold";
-        btn.style.color = "#000";
-        btn.onclick = () => downloadJar(true);
+    function init3D() {
+        scene = new THREE.Scene();
+        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        const light = new THREE.PointLight(0xffffff, 1, 100);
+        light.position.set(10, 10, 10);
+        scene.add(light);
+        camera.position.z = 5;
     }
 
-    // --- SHOOTER ENGINE ---
-    function initShooter() {
-        gameState = 'shooter';
+    function start3DGame() {
+        if (!scene) init3D();
+        isGameRunning = true;
         score = 0;
-        enemies = [];
-        for(let i=0; i<8; i++) spawnEnemy();
-    }
-
-    function spawnEnemy() {
-        enemies.push({ x: Math.random()*(canvas.width-50), y: Math.random()*(canvas.height-150), w: 40, h: 60, alive: true });
-    }
-
-    // --- BANANA ENGINE ---
-    function initBanana() {
-        gameState = 'banana';
-        score = 0;
-        player = { x: canvas.width/2, y: canvas.height - 100 };
-        ball = { x: canvas.width/2, y: canvas.height/2, vx: 2, vy: 2 };
-    }
-
-    canvas.addEventListener('mousedown', (e) => {
-        if(gameState === 'shooter') {
-            enemies.forEach(en => {
-                if(e.clientX > en.x && e.clientX < en.x+en.w && e.clientY > en.y && e.clientY < en.y+en.h && en.alive) {
-                    en.alive = false;
-                    score++;
-                    if(score >= 8) activateVip();
-                }
-            });
+        document.getElementById('ui').style.display = 'none';
+        
+        // Создаем врагов (3D кубы)
+        for(let i=0; i<10; i++) {
+            const geometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+            const material = new THREE.MeshPhongMaterial({ color: 0xff0000 });
+            const cube = new THREE.Mesh(geometry, material);
+            cube.position.set(Math.random()*4-2, Math.random()*4-2, Math.random()*-5);
+            scene.add(cube);
+            enemies.push(cube);
         }
-    });
-
-    function update() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        if(gameState === 'shooter') {
-            ctx.fillStyle = "#333";
-            ctx.fillText("УБЕЙ ВСЕХ ВРАГОВ: " + score + "/8", 20, 30);
-            enemies.forEach(en => {
-                if(en.alive) {
-                    ctx.fillStyle = "#f00"; // Тело врага
-                    ctx.fillRect(en.x, en.y, en.w, en.h);
-                    ctx.fillStyle = "#000"; // Очки врага
-                    ctx.fillRect(en.x+5, en.y+10, 30, 10);
-                }
-            });
-        }
-
-        if(gameState === 'banana') {
-            ctx.fillStyle = "#ffd700";
-            ctx.beginPath(); // Банан-мяч
-            ctx.arc(ball.x, ball.y, 15, 0, Math.PI*2);
-            ctx.fill();
-            
-            ball.x += ball.vx; ball.y += ball.vy;
-            if(ball.x < 0 || ball.x > canvas.width) ball.vx *= -1;
-            if(ball.y < 0) { score++; ball.vy *= -1; if(score >= 5) activateVip(); }
-            if(ball.y > canvas.height) ball.vy *= -1;
-
-            ctx.fillStyle = "#0f0"; // Твой игрок
-            ctx.fillRect(player.x-40, player.y, 80, 20);
-        }
-
-        requestAnimationFrame(update);
+        animate();
     }
-    
-    // Движение игрока в футболе
-    window.addEventListener('mousemove', (e) => {
-        if(gameState === 'banana') {
-            player.x = e.clientX;
-            // Коллизия с мячом
-            if(ball.y > player.y - 20 && ball.x > player.x - 40 && ball.x < player.x + 40) {
-                ball.vy = -Math.abs(ball.vy) - 0.5;
+
+    function animate() {
+        if (!isGameRunning) return;
+        requestAnimationFrame(animate);
+        
+        enemies.forEach(en => {
+            en.rotation.x += 0.02;
+            en.rotation.y += 0.02;
+            en.position.z += 0.03; // Враги летят на тебя
+            if (en.position.z > 5) en.position.z = -5;
+        });
+
+        renderer.render(scene, camera);
+    }
+
+    // Стрельба по 3D объектам
+    window.addEventListener('mousedown', (event) => {
+        if (!isGameRunning) return;
+        const mouse = new THREE.Vector2();
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+        const raycaster = new THREE.Raycaster();
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects(enemies);
+
+        if (intersects.length > 0) {
+            const obj = intersects[0].object;
+            scene.remove(obj);
+            enemies = enemies.filter(e => e !== obj);
+            score++;
+            if (score >= 10) {
+                isGameRunning = false;
+                unlockVip();
             }
         }
     });
 
-    async function downloadJar(vip) {
+    function unlockVip() {
+        document.getElementById('ui').style.display = 'flex';
+        document.getElementById('mainCard').classList.add('vip-active');
+        document.getElementById('title').innerText = "VIP ALUBA 3D";
+        document.getElementById('title').style.color = "gold";
+        document.getElementById('status').innerText = "ПЕТУХ В ОЧКАХ ОДОБРЯЕТ!";
+        document.getElementById('chicken').classList.add('show-chicken');
+        
+        const btn = document.getElementById('dl-btn');
+        btn.innerText = "СКАЧАТЬ VIP МОД (.JAR)";
+        btn.style.background = "gold";
+        btn.style.color = "black";
+        btn.onclick = () => downloadMod(true);
+    }
+
+    async function downloadMod(vip) {
         const zip = new JSZip();
-        zip.file("META-INF/mods.toml", `modLoader="javafml"\n[[mods]]\nmodId="alubamod"\ndisplayName="${vip ? 'Aluba VIP' : 'Aluba PVP'}"\nauthors="Aluba"`);
-        zip.file("pack.mcmeta", `{"pack":{"description":"By Aluba","pack_format":6}}`);
+        zip.file("META-INF/mods.toml", `modLoader="javafml"\n[[mods]]\nmodId="alubapvp"\ndisplayName="${vip ? 'Aluba VIP' : 'Aluba PVP'}"\nauthors="Aluba"`);
+        zip.file("pack.mcmeta", `{"pack":{"description":"Aluba","pack_format":6}}`);
         const b64 = "yv66vgAAADQASQoACQAbBwAcBwAdCgAJAB4IAB8KAAkAKAgAKQoAAgAqBwArBwAsCgACAC0IAC4KAAIAMAcAMQcAMgEABjxpbml0PgEAAygpVgEABENvZGUBAA9MaW5lTnVtYmVyVGFibGUBABJvblJlbmRlckNyb3NzaGFpcgEAKChMbmV0L21pbmVjcmFmdGZvcmdlL2NsaWVudC9ldmVudC9SZW5kZXJHYW1lT3ZlcmxheUV2ZW50JFByZTspVgEADG9uUmVuZGVyTmFtZQEAKChMbmV0L21pbmVjcmFmdGZvcmdlL2NsaWVudC9ldmVudC9SZW5kZXJOYW1lcGxhdGVFdmVudDspVgEAClNvdXJjZUZpbGUBAA5BbHViYU1haW4uamF2YQwACgALBwAzDAA0ADUHADYMADAANQwAOAA5BwA6DAA7ADwBAAhBTFVCQS1QVlAHAAMBAA9jb20vYWx1YmEvcHZwL0FsdWJhTWFpbgEAEGphdmEvbGFuZy9PYmplY3QBABBvcmcvbGp3Z2wvb3BlbmdsL0dMMTEBABJnbEVuYWJsZQEAEmdsSGludAEAEWdsTGluZVNtb290aEhPVA==";
         zip.file("com/aluba/Main.class", Uint8Array.from(atob(b64), c => c.charCodeAt(0)));
         const content = await zip.generateAsync({type:"blob"});
         const link = document.createElement('a');
         link.href = URL.createObjectURL(content);
-        link.download = (vip ? "AlubaVIP" : "AlubaPVP") + ".jar";
+        link.download = (vip ? "AlubaModVip" : "AlubaMod") + ".jar";
         link.click();
     }
-
-    update();
 </script>
 </body>
 </html>
