@@ -1,0 +1,29 @@
+name: Build Aluba Mod
+on: [push, workflow_dispatch]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Compile
+        run: |
+          wget https://github.com/PojavLauncherTeam/PojavLauncher/raw/v3_openjdk/app/src/main/resources/repackaged/client-20201102123013.jar -O lib.jar
+          mkdir -p out/META-INF
+          javac -cp "lib.jar" src/main/java/com/aluba/pvp/AlubaRenderer.java -d out
+          cp src/main/resources/META-INF/mods.toml out/META-INF/
+          cd out && zip -r ../AlubaPVP.jar .
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: AlubaPVP-Final
+          path: AlubaPVP.jar
