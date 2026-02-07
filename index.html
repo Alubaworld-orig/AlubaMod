@@ -6,146 +6,153 @@
     <title>ALUBA VIP ARENA</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
-        :root { --red: #ff0000; --gold: #ffcc00; --dark: #050505; --neon: #00f2ff; }
-        body { margin: 0; background: var(--dark); color: white; font-family: 'Arial Black', sans-serif; overflow: hidden; touch-action: manipulation; }
+        body { margin: 0; background: #000; color: #fff; font-family: sans-serif; overflow: hidden; }
+        canvas { display: block; background: #111; border-bottom: 4px solid #f00; }
         
-        /* ИГРОВОЕ ПОЛЕ */
-        #arena { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
-        .target { position: absolute; font-size: 50px; cursor: crosshair; z-index: 5; user-select: none; filter: drop-shadow(0 0 10px rgba(255,255,255,0.5)); }
+        .ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .card { background: rgba(0,0,0,0.9); border: 3px solid #f00; padding: 20px; border-radius: 20px; text-align: center; pointer-events: auto; width: 320px; box-shadow: 0 0 30px #f00; }
+        
+        .btn { background: #f00; color: #fff; border: none; padding: 12px; margin: 5px; cursor: pointer; border-radius: 8px; font-weight: bold; width: 90%; }
+        .vip-active { border-color: #ffd700 !important; box-shadow: 0 0 50px #ffd700 !important; }
 
-        /* ИНТЕРФЕЙС */
-        .ui { position: relative; z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; pointer-events: none; }
-        .card { 
-            background: rgba(0, 0, 0, 0.95); border: 4px solid var(--red); 
-            padding: 30px; border-radius: 30px; text-align: center; 
-            pointer-events: auto; width: 350px; transition: all 0.5s ease; 
-            box-shadow: 0 0 20px rgba(255,0,0,0.2);
-        }
-        
-        /* КРУТОЙ ПЕТУХ В ОЧКАХ (Живой GIF) */
-        #vip-chicken { 
-            position: fixed; bottom: -500px; left: 50%; transform: translateX(-50%); 
-            width: 300px; z-index: 100; transition: bottom 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
-            pointer-events: none;
-        }
-        .chicken-show { bottom: -10px !important; }
-
-        /* VIP СТИЛИ ПРИ ПОБЕДЕ */
-        .vip-mode { border-color: var(--gold) !important; box-shadow: 0 0 70px var(--gold) !important; transform: scale(1.05); }
-        .vip-text { color: var(--gold) !important; text-shadow: 0 0 15px var(--gold); }
-        
-        .btn { 
-            background: var(--red); color: white; border: none; padding: 15px; 
-            margin: 8px 0; cursor: pointer; width: 100%; font-weight: bold; border-radius: 12px; 
-            text-transform: uppercase; transition: 0.3s;
-        }
-        .btn:hover { transform: scale(1.02); opacity: 0.9; }
-        #server { color: var(--neon); font-size: 1.1em; margin: 10px 0; letter-spacing: 1px; }
-        #status-label { font-size: 10px; color: #666; letter-spacing: 2px; margin-bottom: 5px; }
+        #chicken-boss { position: fixed; bottom: -400px; left: 50%; transform: translateX(-50%); width: 250px; transition: 1s; z-index: 1000; }
+        .show-chicken { bottom: -10px !important; }
     </style>
 </head>
 <body>
 
-<div id="arena"></div>
+<canvas id="gameCanvas"></canvas>
 
-<img id="vip-chicken" src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExOHp1eXF5MHF5cWp5YXN3ZzJmcXN6Z3Z0YXN3ZzJmcXN6Z3Z0YXN3ZyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3o7TKMGpxxidXfGf84/giphy.gif">
+<img id="chicken-boss" src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExbnY5cXp4YndxeXByZW56eGZidGRqZ3Z0YXN3ZzJmcXN6Z3Z0YXN3ZyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/hS9vS4nU6YFpS/giphy.gif">
 
-<div class="ui">
-    <div class="card" id="main-card">
-        <div id="status-label">STATUS: REGULAR PLAYER</div>
-        <h1 id="title">ALUBA ARENA</h1>
-        <div id="server">Alubaworld.aternos.me</div>
+<div class="ui-layer">
+    <div class="card" id="card">
+        <h1 id="title" style="margin:0; color:#f00;">ALUBA ARENA</h1>
+        <p id="status" style="font-size:12px; color:#888;">ПРОЙДИ ИГРУ ДЛЯ VIP</p>
         
-        <button class="btn" onclick="startShooter()">ИГРАТЬ: SHOOTER (CS)</button>
-        <button class="btn" style="background:#fbff00; color:black;" onclick="startBanana()">ИГРАТЬ: BANANABOOL</button>
-        
-        <hr style="border: 0.5px solid #333; margin: 15px 0;">
-        
-        <button id="dl-btn" class="btn" style="background:#222; border: 1px solid #444;" onclick="downloadJar(false)">СКАЧАТЬ МОД</button>
-        <p id="msg" style="font-size: 11px; color: #777; margin-top: 10px;">Победи в чемпионате, чтобы стать VIP</p>
+        <button class="btn" onclick="initShooter()">ИГРАТЬ: SHOOTER PRO</button>
+        <button class="btn" style="background:#ffd700; color:#000;" onclick="initBanana()">ИГРАТЬ: BANANABOOL</button>
+        <hr style="border:1px solid #333;">
+        <button id="dl-btn" class="btn" style="background:#333;" onclick="downloadJar(false)">СКАЧАТЬ МОД</button>
     </div>
 </div>
 
 <script>
-    let points = 0;
-    const card = document.getElementById('main-card');
-    const dlBtn = document.getElementById('dl-btn');
-    const chicken = document.getElementById('vip-chicken');
-    const arena = document.getElementById('arena');
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 
-    // Функция активации VIP
+    let gameState = 'idle';
+    let enemies = [];
+    let ball = { x: 0, y: 0, vx: 0, vy: 0 };
+    let player = { x: 100, y: 100 };
+    let score = 0;
+
     function activateVip() {
-        points = 0;
-        arena.innerHTML = '';
-        card.classList.add('vip-mode');
-        document.getElementById('status-label').innerText = "STATUS: VIP ELITE CHAMPION";
-        document.getElementById('status-label').style.color = "gold";
-        document.getElementById('title').innerText = "ALUBA VIP MOD";
-        document.getElementById('title').classList.add('vip-text');
-        document.getElementById('msg').innerText = "VIP РАЗБЛОКИРОВАН! ПЕТУХ ОДОБРЯЕТ!";
-        document.getElementById('msg').style.color = "gold";
-        
-        // Появление петуха в очках
-        chicken.classList.add('chicken-show');
-
-        // Превращение кнопки
-        dlBtn.innerText = "СКАЧАТЬ VIP ВЕРСИЮ (.JAR)";
-        dlBtn.style.background = "linear-gradient(to bottom, #ffcc00, #ff9900)";
-        dlBtn.style.color = "black";
-        dlBtn.style.border = "none";
-        dlBtn.onclick = () => downloadJar(true);
+        gameState = 'idle';
+        document.getElementById('card').classList.add('vip-active');
+        document.getElementById('title').innerText = "VIP UNLOCKED";
+        document.getElementById('title').style.color = "#ffd700";
+        document.getElementById('chicken-boss').classList.add('show-chicken');
+        const btn = document.getElementById('dl-btn');
+        btn.innerText = "СКАЧАТЬ VIP МОД";
+        btn.style.background = "gold";
+        btn.style.color = "#000";
+        btn.onclick = () => downloadJar(true);
     }
 
-    // ИГРА: ШУТЕР
-    function startShooter() {
-        arena.innerHTML = ''; points = 0;
-        for(let i=0; i<6; i++) {
-            const e = document.createElement('div');
-            e.className = 'target'; e.innerText = "👮"; 
-            e.style.left = Math.random()*80+"vw"; e.style.top = Math.random()*80+"vh";
-            e.onclick = (ev) => { 
-                ev.target.innerText = "💥"; 
-                points++; 
-                setTimeout(()=>ev.target.remove(), 200); 
-                if(points>=6) activateVip(); 
-            };
-            arena.appendChild(e);
+    // --- SHOOTER ENGINE ---
+    function initShooter() {
+        gameState = 'shooter';
+        score = 0;
+        enemies = [];
+        for(let i=0; i<8; i++) spawnEnemy();
+    }
+
+    function spawnEnemy() {
+        enemies.push({ x: Math.random()*(canvas.width-50), y: Math.random()*(canvas.height-150), w: 40, h: 60, alive: true });
+    }
+
+    // --- BANANA ENGINE ---
+    function initBanana() {
+        gameState = 'banana';
+        score = 0;
+        player = { x: canvas.width/2, y: canvas.height - 100 };
+        ball = { x: canvas.width/2, y: canvas.height/2, vx: 2, vy: 2 };
+    }
+
+    canvas.addEventListener('mousedown', (e) => {
+        if(gameState === 'shooter') {
+            enemies.forEach(en => {
+                if(e.clientX > en.x && e.clientX < en.x+en.w && e.clientY > en.y && e.clientY < en.y+en.h && en.alive) {
+                    en.alive = false;
+                    score++;
+                    if(score >= 8) activateVip();
+                }
+            });
         }
-    }
+    });
 
-    // ИГРА: БАНАНАБУЛ
-    function startBanana() {
-        arena.innerHTML = ''; points = 0;
-        const b = document.createElement('div');
-        b.className = 'target'; b.innerText = "🍌";
-        b.style.left = "50vw"; b.style.top = "50vh";
-        b.onclick = (ev) => { 
-            ev.target.style.left = Math.random()*80+"vw"; 
-            ev.target.style.top = Math.random()*80+"vh"; 
-            points++; 
-            if(points>=10) { b.remove(); activateVip(); }
-        };
-        arena.appendChild(b);
-    }
+    function update() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // ГЕНЕРАЦИЯ JAR ФАЙЛА
-    async function downloadJar(isVip) {
+        if(gameState === 'shooter') {
+            ctx.fillStyle = "#333";
+            ctx.fillText("УБЕЙ ВСЕХ ВРАГОВ: " + score + "/8", 20, 30);
+            enemies.forEach(en => {
+                if(en.alive) {
+                    ctx.fillStyle = "#f00"; // Тело врага
+                    ctx.fillRect(en.x, en.y, en.w, en.h);
+                    ctx.fillStyle = "#000"; // Очки врага
+                    ctx.fillRect(en.x+5, en.y+10, 30, 10);
+                }
+            });
+        }
+
+        if(gameState === 'banana') {
+            ctx.fillStyle = "#ffd700";
+            ctx.beginPath(); // Банан-мяч
+            ctx.arc(ball.x, ball.y, 15, 0, Math.PI*2);
+            ctx.fill();
+            
+            ball.x += ball.vx; ball.y += ball.vy;
+            if(ball.x < 0 || ball.x > canvas.width) ball.vx *= -1;
+            if(ball.y < 0) { score++; ball.vy *= -1; if(score >= 5) activateVip(); }
+            if(ball.y > canvas.height) ball.vy *= -1;
+
+            ctx.fillStyle = "#0f0"; // Твой игрок
+            ctx.fillRect(player.x-40, player.y, 80, 20);
+        }
+
+        requestAnimationFrame(update);
+    }
+    
+    // Движение игрока в футболе
+    window.addEventListener('mousemove', (e) => {
+        if(gameState === 'banana') {
+            player.x = e.clientX;
+            // Коллизия с мячом
+            if(ball.y > player.y - 20 && ball.x > player.x - 40 && ball.x < player.x + 40) {
+                ball.vy = -Math.abs(ball.vy) - 0.5;
+            }
+        }
+    });
+
+    async function downloadJar(vip) {
         const zip = new JSZip();
-        const fileName = isVip ? "AlubaModVip_1.16.5" : "AlubaPVPMod_1.16.5";
-        
-        zip.file("META-INF/mods.toml", `modLoader="javafml"\n[[mods]]\nmodId="alubamod"\ndisplayName="${isVip ? 'Aluba VIP' : 'Aluba PVP'}"\nauthors="Aluba"`);
-        zip.file("pack.mcmeta", `{"pack":{"description":"Created by Aluba","pack_format":6}}`);
-        
-        // Базовый бинарный код мода
+        zip.file("META-INF/mods.toml", `modLoader="javafml"\n[[mods]]\nmodId="alubamod"\ndisplayName="${vip ? 'Aluba VIP' : 'Aluba PVP'}"\nauthors="Aluba"`);
+        zip.file("pack.mcmeta", `{"pack":{"description":"By Aluba","pack_format":6}}`);
         const b64 = "yv66vgAAADQASQoACQAbBwAcBwAdCgAJAB4IAB8KAAkAKAgAKQoAAgAqBwArBwAsCgACAC0IAC4KAAIAMAcAMQcAMgEABjxpbml0PgEAAygpVgEABENvZGUBAA9MaW5lTnVtYmVyVGFibGUBABJvblJlbmRlckNyb3NzaGFpcgEAKChMbmV0L21pbmVjcmFmdGZvcmdlL2NsaWVudC9ldmVudC9SZW5kZXJHYW1lT3ZlcmxheUV2ZW50JFByZTspVgEADG9uUmVuZGVyTmFtZQEAKChMbmV0L21pbmVjcmFmdGZvcmdlL2NsaWVudC9ldmVudC9SZW5kZXJOYW1lcGxhdGVFdmVudDspVgEAClNvdXJjZUZpbGUBAA5BbHViYU1haW4uamF2YQwACgALBwAzDAA0ADUHADYMADAANQwAOAA5BwA6DAA7ADwBAAhBTFVCQS1QVlAHAAMBAA9jb20vYWx1YmEvcHZwL0FsdWJhTWFpbgEAEGphdmEvbGFuZy9PYmplY3QBABBvcmcvbGp3Z2wvb3BlbmdsL0dMMTEBABJnbEVuYWJsZQEAEmdsSGludAEAEWdsTGluZVNtb290aEhPVA==";
-        
         zip.file("com/aluba/Main.class", Uint8Array.from(atob(b64), c => c.charCodeAt(0)));
-        const blob = await zip.generateAsync({type:"blob"});
+        const content = await zip.generateAsync({type:"blob"});
         const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = fileName + ".jar";
+        link.href = URL.createObjectURL(content);
+        link.download = (vip ? "AlubaVIP" : "AlubaPVP") + ".jar";
         link.click();
     }
+
+    update();
 </script>
 </body>
 </html>
