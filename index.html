@@ -2,135 +2,131 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>ALUBA VIP ELITE</title>
+    <title>ALUBA VIP EVOLUTION</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
-        body { margin: 0; background: #0a0a0a; color: #fff; font-family: 'Courier New', monospace; overflow: hidden; }
-        canvas { display: block; background: #1a1a1a; cursor: crosshair; }
-        .ui-main { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; }
-        .menu-card { background: rgba(0,0,0,0.95); border: 4px solid #ff0000; padding: 25px; border-radius: 15px; text-align: center; pointer-events: auto; width: 350px; box-shadow: 0 0 40px #f00; }
-        .btn-action { background: #f00; color: #fff; border: none; padding: 15px; margin: 10px 0; cursor: pointer; width: 100%; font-weight: bold; font-size: 16px; border-radius: 5px; }
-        .vip-gold { border-color: #ffd700 !important; box-shadow: 0 0 60px #ffd700 !important; }
-        #vip-chicken { position: fixed; bottom: -500px; left: 50%; transform: translateX(-50%); width: 280px; transition: 0.8s; z-index: 100; pointer-events: none; }
-        .show-chick { bottom: -20px !important; }
-        #hud { position: absolute; top: 20px; left: 20px; font-size: 20px; color: #f00; font-weight: bold; }
+        body { margin: 0; background: #000; color: #fff; font-family: 'Arial Black', sans-serif; overflow: hidden; }
+        canvas { display: block; }
+        
+        #ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; }
+        .card { background: rgba(0,0,0,0.9); border: 3px solid #ff0000; padding: 25px; border-radius: 20px; text-align: center; width: 320px; box-shadow: 0 0 30px #f00; }
+        
+        /* ПЕТУХ (Для телефонов) */
+        #mobile-chicken { display: none; width: 90vw; border-radius: 20px; }
+        
+        .btn { background: #f00; color: white; border: none; padding: 15px; margin: 10px 0; width: 100%; border-radius: 10px; cursor: pointer; font-weight: bold; }
+        .vip-gold { border-color: gold !important; box-shadow: 0 0 50px gold !important; }
+        
+        #quiz { display: none; }
+        input { width: 80%; padding: 10px; margin: 10px 0; border-radius: 5px; border: none; text-align: center; }
     </style>
 </head>
 <body>
 
-<div id="hud"></div>
-<canvas id="game"></canvas>
+<div id="ui">
+    <div class="card" id="pc-card">
+        <h1 id="title">ALUBA ARENA</h1>
+        
+        <div id="gd-game">
+            <p style="font-size: 12px; color: #aaa;">GEOMETRY DASH: Прыгай (Клик/Пробел)</p>
+            <canvas id="gdCanvas" width="300" height="150" style="border: 1px solid #333;"></canvas>
+            <p id="score">Шипы: 0/10</p>
+        </div>
 
-<img id="vip-chicken" src="https://media1.tenor.com/m/hS9vS4nU6YFpS/chicken-glasses.gif">
+        <div id="quiz">
+            <p>ВИКТОРИНА НА VIP:</p>
+            <p id="question">1. Какой префикс у мода?</p>
+            <input type="text" id="ans" placeholder="Ответ здесь...">
+            <button class="btn" onclick="checkQuiz()">ОТВЕТИТЬ</button>
+        </div>
 
-<div class="ui-main">
-    <div class="menu-card" id="card">
-        <h1 id="title" style="margin:0; font-size: 2em;">ALUBA ARENA</h1>
-        <p id="info">УБЕЙ ВСЕХ 😵 (3 РАУНДА)</p>
-        <button class="btn-action" onclick="startGame('shooter')">ИГРАТЬ В ШУТЕР</button>
-        <button class="btn-action" style="background: #333;" onclick="startGame('banana')">БАНАН-ВЫЖИВАНИЕ</button>
-        <hr style="border: 0.5px solid #444;">
-        <button id="dl-btn" class="btn-action" style="background:#222;" onclick="download(false)">СКАЧАТЬ ALUBA MOD</button>
+        <hr>
+        <button id="dl-btn" class="btn" style="background:#333; display:none;" onclick="downloadJar(true)">СКАЧАТЬ VIP JAR</button>
     </div>
+
+    <img id="mobile-chicken" src="https://media1.tenor.com/m/hS9vS4nU6YFpS/chicken-glasses.gif">
+    <p id="m-text" style="display:none; color:gold;">ALUBA VIP MOBILE ACTIVE</p>
 </div>
 
 <script>
-const canvas = document.getElementById('game');
-const ctx = canvas.getContext('2d');
-const hud = document.getElementById('hud');
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
-
-let mode = null;
-let round = 0;
-let enemies = [];
-let allies = [];
-let isVip = false;
-
-function spawnEntities() {
-    enemies = []; allies = [];
-    // Террористы
-    for(let i=0; i < 5 + round; i++) {
-        enemies.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, hp: 100, v: 2 });
-    }
-    // Твоя команда
-    for(let i=0; i < 3; i++) {
-        allies.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, hp: 100 });
-    }
-}
-
-function startGame(m) {
-    mode = m; round = 0;
-    document.querySelector('.ui-main').style.display = 'none';
-    spawnEntities();
-    animate();
-}
-
-canvas.addEventListener('mousedown', (e) => {
-    if(mode !== 'shooter') return;
-    enemies.forEach((en, index) => {
-        const dist = Math.hypot(en.x - e.clientX, en.y - e.clientY);
-        if(dist < 40) {
-            en.hp -= 50;
-            if(en.hp <= 0) enemies.splice(index, 1);
-        }
-    });
-
-    if(enemies.length === 0) {
-        round++;
-        if(round >= 3) winAll();
-        else spawnEntities();
-    }
-});
-
-function winAll() {
-    mode = null;
-    document.querySelector('.ui-main').style.display = 'flex';
-    document.getElementById('card').classList.add('vip-gold');
-    document.getElementById('title').innerText = "VIP ALUBA UNLOCKED";
-    document.getElementById('title').style.color = "gold";
-    document.getElementById('vip-chicken').classList.add('show-chick');
-    const b = document.getElementById('dl-btn');
-    b.innerText = "СКАЧАТЬ VIP MOD .JAR";
-    b.style.background = "gold"; b.style.color = "#000";
-    b.onclick = () => download(true);
-}
-
-function animate() {
-    if(!mode) return;
-    ctx.fillStyle = '#111'; ctx.fillRect(0,0,canvas.width, canvas.height);
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    const canvas = document.getElementById('gdCanvas');
+    const ctx = canvas.getContext('2d');
     
-    hud.innerText = `РАУНД: ${round + 1} | ЦЕЛИ: ${enemies.length}`;
+    let gdScore = 0;
+    let playerY = 120, velocity = 0, isJumping = false;
+    let obstacleX = 300;
 
-    // Рисуем союзников 👮
-    allies.forEach(al => {
-        ctx.font = "40px Arial";
-        ctx.fillText("👮", al.x, al.y);
-        al.x += Math.sin(Date.now()/500)*2;
-    });
+    // --- ЛОГИКА ОПРЕДЕЛЕНИЯ УСТРОЙСТВА ---
+    if(isMobile) {
+        document.getElementById('pc-card').style.display = 'none';
+        document.getElementById('mobile-chicken').style.display = 'block';
+        document.getElementById('m-text').style.display = 'block';
+    } else {
+        runGD();
+    }
 
-    // Рисуем врагов 😵
-    enemies.forEach(en => {
-        ctx.font = "40px Arial";
-        ctx.fillText("😵", en.x, en.y);
-        en.x += (Math.random()-0.5)*10;
-        en.y += (Math.random()-0.5)*10;
-    });
+    // --- GEOMETRY DASH ПК ---
+    function runGD() {
+        if(gdScore >= 10) return;
+        requestAnimationFrame(runGD);
+        ctx.fillStyle = "#111"; ctx.fillRect(0,0,300,150);
+        
+        // Игрок (Куб)
+        ctx.fillStyle = "#00f2ff";
+        ctx.fillRect(50, playerY, 20, 20);
+        
+        // Гравитация
+        if(isJumping) {
+            velocity += 0.6; playerY += velocity;
+            if(playerY >= 120) { playerY = 120; isJumping = false; }
+        }
 
-    requestAnimationFrame(animate);
-}
+        // Шип
+        ctx.fillStyle = "red";
+        ctx.beginPath();
+        ctx.moveTo(obstacleX, 140); ctx.lineTo(obstacleX+10, 120); ctx.lineTo(obstacleX+20, 140);
+        ctx.fill();
+        
+        obstacleX -= 4;
+        if(obstacleX < -20) { obstacleX = 300; gdScore++; document.getElementById('score').innerText = `Шипы: ${gdScore}/10`; }
+        
+        // Коллизия
+        if(obstacleX < 70 && obstacleX > 30 && playerY > 100) { gdScore = 0; obstacleX = 300; }
+        
+        if(gdScore >= 10) {
+            document.getElementById('gd-game').style.display = 'none';
+            document.getElementById('quiz').style.display = 'block';
+        }
+    }
 
-function download(vip) {
-    const zip = new JSZip();
-    zip.file("META-INF/mods.toml", `modLoader="javafml"\n[[mods]]\nmodId="alubamod"\ndisplayName="${vip?'VIP':'Regular'}"`);
-    zip.file("pack.mcmeta", `{"pack":{"description":"Aluba","pack_format":6}}`);
-    const b64 = "yv66vgAAADQASQoACQAbBwAcBwAdCgAJAB4IAB8KAAkAKAgAKQoAAgAqBwArBwAsCgACAC0IAC4KAAIAMAcAMQcAMgEABjxpbml0PgEAAygpVgEABENvZGUBAA9MaW5lTnVtYmVyVGFibGUBABJvblJlbmRlckNyb3NzaGFpcgEAKChMbmV0L21pbmVjcmFmdGZvcmdlL2NsaWVudC9ldmVudC9SZW5kZXJHYW1lT3ZlcmxheUV2ZW50JFByZTspVgEADG9uUmVuZGVyTmFtZQEAKChMbmV0L21pbmVjcmFmdGZvcmdlL2NsaWVudC9ldmVudC9SZW5kZXJOYW1lcGxhdGVFdmVudDspVgEAClNvdXJjZUZpbGUBAA5BbHViYU1haW4uamF2YQwACgALBwAzDAA0ADUHADYMADAANQwAOAA5BwA6DAA7ADwBAAhBTFVCQS1QVlAHAAMBAA9jb20vYWx1YmEvcHZwL0FsdWJhTWFpbgEAEGphdmEvbGFuZy9PYmplY3QBABBvcmcvbGp3Z2wvb3BlbmdsL0dMMTEBABJnbEVuYWJsZQEAEmdsSGludAEAEWdsTGluZVNtb290aEhPVA==";
-    zip.file("com/aluba/Main.class", Uint8Array.from(atob(b64), c => c.charCodeAt(0)));
-    zip.generateAsync({type:"blob"}).then(b => {
-        const a = document.createElement('a'); a.href = URL.createObjectURL(b);
-        a.download = vip ? "AlubaVIP.jar" : "AlubaPVP.jar"; a.click();
-    });
-}
+    window.addEventListener('keydown', (e) => { if(e.code === 'Space' && !isJumping) { velocity = -8; isJumping = true; } });
+    canvas.addEventListener('mousedown', () => { if(!isJumping) { velocity = -8; isJumping = true; } });
+
+    // --- ВИКТОРИНА ---
+    function checkQuiz() {
+        const val = document.getElementById('ans').value.toLowerCase();
+        if(val.includes('aluba')) {
+            document.getElementById('quiz').innerHTML = "<b style='color:gold;'>ВСЕ ВЕРНО!</b>";
+            document.getElementById('pc-card').classList.add('vip-gold');
+            document.getElementById('dl-btn').style.display = 'block';
+            document.getElementById('title').innerText = "VIP ALUBA UNLOCKED";
+        } else {
+            alert("НЕВЕРНО! ПОДУМАЙ ЕЩЕ!");
+        }
+    }
+
+    // --- СБОРКА JAR ---
+    async function downloadJar(vip) {
+        const zip = new JSZip();
+        zip.file("META-INF/mods.toml", `modLoader="javafml"\n[[mods]]\nmodId="alubavip"\ndisplayName="AlubaModVip"`);
+        zip.file("pack.mcmeta", `{"pack":{"description":"Aluba VIP","pack_format":6}}`);
+        const b64 = "yv66vgAAADQASQoACQAbBwAcBwAdCgAJAB4IAB8KAAkAKAgAKQoAAgAqBwArBwAsCgACAC0IAC4KAAIAMAcAMQcAMgEABjxpbml0PgEAAygpVgEABENvZGUBAA9MaW5lTnVtYmVyVGFibGUBABJvblJlbmRlckNyb3NzaGFpcgEAKChMbmV0L21pbmVjcmFmdGZvcmdlL2NsaWVudC9ldmVudC9SZW5kZXJHYW1lT3ZlcmxheUV2ZW50JFByZTspVgEADG9uUmVuZGVyTmFtZQEAKChMbmV0L21pbmVjcmFmdGZvcmdlL2NsaWVudC9ldmVudC9SZW5kZXJOYW1lcGxhdGVFdmVudDspVgEAClNvdXJjZUZpbGUBAA5BbHViYU1haW4uamF2YQwACgALBwAzDAA0ADUHADYMADAANQwAOAA5BwA6DAA7ADwBAAhBTFVCQS1QVlAHAAMBAA9jb20vYWx1YmEvcHZwL0FsdWJhTWFpbgEAEGphdmEvbGFuZy9PYmplY3QBABBvcmcvbGp3Z2wvb3BlbmdsL0dMMTEBABJnbEVuYWJsZQEAEmdsSGludAEAEWdsTGluZVNtb290aEhPVA==";
+        zip.file("com/aluba/Main.class", Uint8Array.from(atob(b64), c => c.charCodeAt(0)));
+        const blob = await zip.generateAsync({type:"blob"});
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+        a.download = "AlubaModVip.jar"; a.click();
+    }
 </script>
 </body>
 </html>
