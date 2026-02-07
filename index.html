@@ -2,138 +2,146 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>ALUBA HARDCORE ARENA</title>
+    <title>ALUBA 3D VIP WORLD</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
-        body { margin: 0; background: #000; color: #fff; font-family: 'Arial Black', sans-serif; overflow: hidden; }
-        #gameCanvas { display: block; cursor: crosshair; }
-        .ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .menu { background: rgba(0,0,0,0.9); border: 5px solid #f00; padding: 30px; border-radius: 20px; pointer-events: auto; text-align: center; min-width: 300px; box-shadow: 0 0 50px #f00; }
-        .btn { background: #f00; color: #fff; border: none; padding: 15px; margin: 10px; cursor: pointer; font-weight: bold; width: 100%; border-radius: 10px; }
-        .vip-gold { border-color: #ffd700 !important; box-shadow: 0 0 50px #ffd700 !important; }
-        #chicken-vip { position: fixed; bottom: -500px; left: 50%; transform: translateX(-50%); width: 250px; transition: 1s; z-index: 1000; }
+        body { margin: 0; background: #000; overflow: hidden; font-family: 'Arial Black', sans-serif; }
+        canvas { display: block; }
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .menu { background: rgba(0,0,0,0.85); border: 4px solid #f00; padding: 30px; border-radius: 20px; pointer-events: auto; text-align: center; color: white; box-shadow: 0 0 50px #f00; width: 320px; }
+        .btn { background: #f00; color: #fff; border: none; padding: 15px; margin: 10px 0; cursor: pointer; width: 100%; font-weight: bold; border-radius: 10px; transition: 0.2s; }
+        .btn:hover { transform: scale(1.05); background: #ff3333; }
+        #chicken-boss { position: fixed; bottom: -500px; left: 50%; transform: translateX(-50%); width: 280px; transition: 1s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 100; }
         .active-chick { bottom: 0 !important; }
+        .vip-gold { border-color: gold !important; box-shadow: 0 0 60px gold !important; }
     </style>
 </head>
 <body>
 
-<canvas id="gameCanvas"></canvas>
+<img id="chicken-boss" src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExbnY5cXp4YndxeXByZW56eGZidGRqZ3Z0YXN3ZzJmcXN6Z3Z0YXN3ZyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/hS9vS4nU6YFpS/giphy.gif">
 
-<img id="chicken-vip" src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExbnY5cXp4YndxeXByZW56eGZidGRqZ3Z0YXN3ZzJmcXN6Z3Z0YXN3ZyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/hS9vS4nU6YFpS/giphy.gif">
-
-<div class="ui">
-    <div class="menu" id="menu">
-        <h1 id="title" style="color:red; margin:0;">ALUBA ARENA</h1>
-        <p id="stats">РАУНДЫ: 0/3</p>
-        <button class="btn" onclick="startTeamShooter()">SHOOTER (3 РАУНДА)</button>
-        <button class="btn" style="background:#ffd700; color:#000;" onclick="startBananaFootball()">BANANA FOOTBALL</button>
-        <hr>
-        <button id="dl-btn" class="btn" style="background:#333;" onclick="getMod(false)">СКАЧАТЬ МОД</button>
+<div id="ui-layer">
+    <div class="menu" id="mainMenu">
+        <h1 id="title" style="margin:0;">ALUBA 3D</h1>
+        <p id="info">ВЫИГРАЙ 3 РАУНДА ДЛЯ VIP</p>
+        <button class="btn" onclick="init3DGame('shooter')">START 3D SHOOTER</button>
+        <button class="btn" style="background:gold; color:black;" onclick="init3DGame('football')">START 3D FIFA</button>
+        <hr style="border:0.5px solid #444;">
+        <button id="dl-btn" class="btn" style="background:#222;" onclick="download(false)">СКАЧАТЬ МОД</button>
     </div>
 </div>
 
 <script>
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+let scene, camera, renderer, clock, enemies = [], ball, player, isVIP = false;
+let gameMode = null, rounds = 0, score = 0;
 
-let mode = 'menu';
-let roundsWon = 0;
-let entities = [];
-let ball = { x: 0, y: 0, dx: 0, dy: 0 };
-let player = { x: 0, y: 0 };
+function setupScene() {
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x050505);
+    camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+    
+    const light = new THREE.AmbientLight(0xffffff, 0.5); scene.add(light);
+    const pLight = new THREE.PointLight(0xff0000, 1, 100); pLight.position.set(0, 10, 10); scene.add(pLight);
+}
 
-function getMod(vip) {
+function init3DGame(mode) {
+    if(!scene) setupScene();
+    gameMode = mode;
+    rounds = 0; score = 0;
+    document.getElementById('ui-layer').style.display = 'none';
+    
+    if(mode === 'shooter') startShooterRound();
+    if(mode === 'football') startFootballMatch();
+    animate();
+}
+
+function startShooterRound() {
+    enemies.forEach(e => scene.remove(e));
+    enemies = [];
+    camera.position.set(0, 1.6, 5);
+    for(let i=0; i<5; i++) {
+        const geo = new THREE.CapsuleGeometry(0.3, 1, 4, 8);
+        const mat = new THREE.MeshPhongMaterial({color: 0xff0000});
+        const enemy = new THREE.Mesh(geo, mat);
+        enemy.position.set(Math.random()*10-5, 1, Math.random()*-10);
+        scene.add(enemy);
+        enemies.push(enemy);
+    }
+}
+
+function startFootballMatch() {
+    scene.children = scene.children.filter(c => c.type === 'AmbientLight' || c.type === 'PointLight');
+    // Поле
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(20, 40), new THREE.MeshPhongMaterial({color: 0x00ff00}));
+    ground.rotation.x = -Math.PI/2; scene.add(ground);
+    // Ворота
+    const goal = new THREE.Mesh(new THREE.BoxGeometry(4, 2, 0.5), new THREE.MeshPhongMaterial({color: 0xffffff, wireframe: true}));
+    goal.position.set(0, 1, -18); scene.add(goal);
+    // Мяч (Банан в 3D)
+    ball = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.1, 8, 20), new THREE.MeshPhongMaterial({color: 0xffff00}));
+    ball.position.set(0, 0.5, 0); scene.add(ball);
+    camera.position.set(0, 5, 10); camera.lookAt(0,0,-5);
+}
+
+function unlockVIP() {
+    gameMode = null;
+    document.getElementById('ui-layer').style.display = 'flex';
+    document.getElementById('mainMenu').classList.add('vip-gold');
+    document.getElementById('title').innerText = "ALUBA VIP UNLOCKED";
+    document.getElementById('title').style.color = "gold";
+    document.getElementById('chicken-boss').classList.add('active-chick');
+    const b = document.getElementById('dl-btn');
+    b.innerText = "СКАЧАТЬ VIP МОД (.JAR)"; b.style.background = "gold"; b.style.color = "black";
+    b.onclick = () => download(true);
+}
+
+window.addEventListener('mousedown', (e) => {
+    if(gameMode === 'shooter') {
+        const mouse = new THREE.Vector2((e.clientX/window.innerWidth)*2-1, -(e.clientY/window.innerHeight)*2+1);
+        const raycaster = new THREE.Raycaster();
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects(enemies);
+        if(intersects.length > 0) {
+            scene.remove(intersects[0].object);
+            enemies = enemies.filter(en => en !== intersects[0].object);
+            if(enemies.length === 0) {
+                rounds++;
+                if(rounds >= 3) unlockVIP(); else startShooterRound();
+            }
+        }
+    }
+    if(gameMode === 'football' && ball) {
+        ball.position.z -= 2; ball.position.y += 0.2; // Псевдо-удар
+        if(ball.position.z < -17 && Math.abs(ball.position.x) < 2) {
+            score++; if(score >= 3) unlockVIP(); else ball.position.set(0, 0.5, 0);
+        }
+    }
+});
+
+function animate() {
+    if(!gameMode) return;
+    requestAnimationFrame(animate);
+    if(gameMode === 'shooter') {
+        enemies.forEach(en => { en.position.z += 0.02; if(en.position.z > 5) en.position.z = -10; });
+    }
+    renderer.render(scene, camera);
+}
+
+function download(vip) {
     const zip = new JSZip();
     zip.file("META-INF/mods.toml", `modLoader="javafml"\n[[mods]]\nmodId="alubamod"\ndisplayName="${vip?'VIP':'Regular'}"`);
     zip.file("pack.mcmeta", `{"pack":{"description":"Aluba","pack_format":6}}`);
+    const b64 = "yv66vgAAADQASQoACQAbBwAcBwAdCgAJAB4IAB8KAAkAKAgAKQoAAgAqBwArBwAsCgACAC0IAC4KAAIAMAcAMQcAMgEABjxpbml0PgEAAygpVgEABENvZGUBAA9MaW5lTnVtYmVyVGFibGUBABJvblJlbmRlckNyb3NzaGFpcgEAKChMbmV0L21pbmVjcmFmdGZvcmdlL2NsaWVudC9ldmVudC9SZW5kZXJHYW1lT3ZlcmxheUV2ZW50JFByZTspVgEADG9uUmVuZGVyTmFtZQEAKChMbmV0L21pbmVjcmFmdGZvcmdlL2NsaWVudC9ldmVudC9SZW5kZXJOYW1lcGxhdGVFdmVudDspVgEAClNvdXJjZUZpbGUBAA5BbHViYU1haW4uamF2YQwACgALBwAzDAA0ADUHADYMADAANQwAOAA5BwA6DAA7ADwBAAhBTFVCQS1QVlAHAAMBAA9jb20vYWx1YmEvcHZwL0FsdWJhTWFpbgEAEGphdmEvbGFuZy9PYmplY3QBABBvcmcvbGp3Z2wvb3BlbmdsL0dMMTEBABJnbEVuYWJsZQEAEmdsSGludAEAEWdsTGluZVNtb290aEhPVA==";
+    zip.file("com/aluba/Main.class", Uint8Array.from(atob(b64), c => c.charCodeAt(0)));
     zip.generateAsync({type:"blob"}).then(b => {
         const a = document.createElement('a'); a.href = URL.createObjectURL(b);
         a.download = vip ? "AlubaVIP.jar" : "AlubaPVP.jar"; a.click();
     });
 }
-
-function startTeamShooter() {
-    mode = 'shooter'; roundsWon = 0; 
-    document.getElementById('menu').style.display = 'none';
-    nextRound();
-}
-
-function nextRound() {
-    entities = [];
-    // Команда 😵 (Враги)
-    for(let i=0; i<5; i++) entities.push({x: Math.random()*canvas.width, y: Math.random()*canvas.height, type:'enemy', dead: false});
-    // Команда 👮 (Союзники - боты)
-    for(let i=0; i<3; i++) entities.push({x: Math.random()*canvas.width, y: Math.random()*canvas.height, type:'ally', dead: false});
-}
-
-function startBananaFootball() {
-    mode = 'football'; roundsWon = 0;
-    document.getElementById('menu').style.display = 'none';
-    ball = { x: canvas.width/2, y: canvas.height/2, dx: 5, dy: 5 };
-    player = { x: canvas.width/2, y: canvas.height - 50 };
-}
-
-canvas.addEventListener('click', (e) => {
-    if(mode === 'shooter') {
-        entities.forEach(en => {
-            const dist = Math.hypot(en.x - e.clientX, en.y - e.clientY);
-            if(dist < 30 && en.type === 'enemy' && !en.dead) {
-                en.dead = true;
-                if(entities.filter(ent => ent.type === 'enemy' && !ent.dead).length === 0) {
-                    roundsWon++;
-                    if(roundsWon >= 3) finishGame();
-                    else nextRound();
-                }
-            }
-        });
-    }
-});
-
-function finishGame() {
-    mode = 'menu';
-    document.getElementById('menu').style.display = 'block';
-    document.getElementById('menu').classList.add('vip-gold');
-    document.getElementById('title').innerText = "VIP ALUBA UNLOCKED";
-    document.getElementById('title').style.color = "gold";
-    document.getElementById('chicken-vip').classList.add('active-chick');
-    const b = document.getElementById('dl-btn');
-    b.innerText = "СКАЧАТЬ VIP МОД"; b.style.background = "gold"; b.style.color = "#000";
-    b.onclick = () => getMod(true);
-}
-
-function update() {
-    ctx.fillStyle = '#111'; ctx.fillRect(0,0,canvas.width, canvas.height);
-
-    if(mode === 'shooter') {
-        ctx.fillStyle = "white"; ctx.fillText("РАУНДОВ ВЫИГРАНО: " + roundsWon + "/3", 20, 30);
-        entities.forEach(en => {
-            if(!en.dead) {
-                ctx.font = "30px Arial";
-                ctx.fillText(en.type === 'enemy' ? "😵" : "👮", en.x, en.y);
-                // Простая логика движения
-                en.x += (Math.random()-0.5)*5; en.y += (Math.random()-0.5)*5;
-            }
-        });
-    }
-
-    if(mode === 'football') {
-        ctx.fillStyle = "yellow"; ctx.font = "40px Arial"; ctx.fillText("🍌", ball.x, ball.y);
-        ctx.fillStyle = "blue"; ctx.fillRect(player.x - 50, player.y, 100, 20); // Игрок
-        
-        ball.x += ball.dx; ball.y += ball.dy;
-        if(ball.x < 0 || ball.x > canvas.width) ball.dx *= -1;
-        if(ball.y < 0) { roundsWon++; ball.dy *= -1; if(roundsWon >= 10) finishGame(); }
-        if(ball.y > canvas.height) { ball.y = canvas.height/2; ball.dy = -5; }
-
-        if(ball.y > player.y - 20 && ball.x > player.x - 50 && ball.x < player.x + 50) ball.dy = -Math.abs(ball.dy);
-    }
-    requestAnimationFrame(update);
-}
-
-window.addEventListener('mousemove', (e) => { player.x = e.clientX; });
-update();
 </script>
 </body>
 </html>
